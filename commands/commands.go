@@ -24,7 +24,7 @@ func CommandHelp(cfg *state.Config) error {
 	for str, cmd := range SupportedCommands {
 		fmt.Printf("Command: %s\n", str)
 		fmt.Printf("    name: %s\n", cmd.Name)
-		fmt.Printf("    description: %s\n", cmd.Description)
+		fmt.Printf("    description: %s\n\n", cmd.Description)
 	}
 	return nil
 }
