@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"strconv"
 	"github.com/CoupDeGrace92/pokedexcli/state"
+	"github.com/CoupDeGrace92/pokedexcli/internal"
+	"time"
 )
 
 type LocationArea struct {
@@ -13,9 +15,18 @@ type LocationArea struct {
 	Name    string
 }
 
-func GetMap(id int) (LocationArea, error){
+func GetMap(id int, cache *internal.Cache, interval time.Duration) (LocationArea, error){
 	idString := strconv.Itoa(id)
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", idString)
+
+	if value, ok := cache.Get(url); ok{
+		var locationArea LocationArea
+		err := json.Unmarshal(value, &locationArea)
+		if err != nil{
+			return LocationArea{}, fmt.Errorf("Error unmarshalling data from cache: %v", err)
+		}
+		return locationArea, nil
+	}
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -33,30 +44,26 @@ func GetMap(id int) (LocationArea, error){
 		return LocationArea{}, fmt.Errorf("Error with decoding json from pokeapi: %w", err)
 	}
 
-	//Alternative to the decoder, we can unmarshall the data 
-	//the distinction is decode streams the data into the json, unmarshalling creates a reader with all the data
-	//and then unmarshalls all of it at once instead of as the byte data comes in
-	//In small files, there is not much of a distinction, but decoding is better for large files or data that is in a constant stream
-	//Marshalling is simpler for smaller files
-	/*
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return LocationArea{}, fmt.Errorf("Error with byte reader: %v", err)
+	//We need to convert locationMap to byte[]
+	byteSlice, err:= json.Marshal(locationMap)
+	if err != nil{
+		return LocationArea{}, fmt.Errorf("Error with marshalling json from locationMap struct: %v", err)
 	}
-	var locationMap LocationArea
-	if err := json.Unmarshal(bodyBytes, &locationMap); err = nil{
-		return LocationArea{}, fmt.Errorf("Error with unmarshalling json from pokeapi: %w", err)
-	}
-	*/
-
+	cache.Add(url, byteSlice)
 
 	return locationMap, nil
 }
 
 func Map(st *state.Config) error {
 	startId := st.Id
+	if st.LocationCache == nil{
+		c  := internal.NewCache(st.Interval)
+		st.LocationCache = &c
+	}
+	cache := st.LocationCache
+	interval := st.Interval
 	for i:=startId+1; i<=startId+20; i++ {
-		location, err := GetMap(i)
+		location, err := GetMap(i, cache, interval)
 		if err != nil{
 			//fmt.Printf("%v", err)
 			st.Id = i-1
@@ -70,8 +77,14 @@ func Map(st *state.Config) error {
 
 func MapB(st *state.Config) error {
 	startId := st.Id
+	if st.LocationCache == nil{
+		c  := internal.NewCache(st.Interval)
+		st.LocationCache = &c
+	}
+	cache := st.LocationCache
+	interval := st.Interval
 	for i := startId-1; i>=startId-20; i-- {
-		location, err := GetMap(i)
+		location, err := GetMap(i, cache, interval)
 		if err != nil{
 			//fmt.Printf("%v", err)
 			st.Id = i+1

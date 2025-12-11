@@ -5,12 +5,15 @@ import (
 	"github.com/CoupDeGrace92/pokedexcli/repl"
 	"github.com/CoupDeGrace92/pokedexcli/state"
 	"fmt"
+	"time"
 )
 
 
 func main() {
 	cfg := &state.Config{
-		Id: 0,
+		Id:            0,
+		LocationCache: nil,
+		Interval:      45 * time.Second,
 	}
 
 	fmt.Print("Welcome to the Pokedex!\n")
