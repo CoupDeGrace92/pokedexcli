@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"github.com/CoupDeGrace92/pokedexcli/commands"
+	"github.com/CoupDeGrace92/pokedexcli/state"
 )
 
 func CleanInput(text string) []string {
@@ -29,7 +30,7 @@ func CleanInput(text string) []string {
 	return cleanedInput
 }
 
-func CommandReader(reader io.Reader) {
+func CommandReader(reader io.Reader, cfg *state.Config) {
 	scanner := bufio.NewScanner(reader)
 	for {
 		fmt.Print("Pokedex > ")
@@ -47,7 +48,7 @@ func CommandReader(reader io.Reader) {
 			fmt.Printf("Command %s not found in Supported Commands, try help to see supported commands\n", textScan)
 			continue
 		} 
-		value.Callback()
+		value.Callback(cfg)
 	}
 }
 

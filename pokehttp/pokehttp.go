@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"fmt"
 	"encoding/json"
+	"strconv"
+	"github.com/CoupDeGrace92/pokedexcli/state"
 )
 
 type LocationArea struct {
@@ -11,24 +13,24 @@ type LocationArea struct {
 	Name    string
 }
 
-func GetMap(id int) (locationMap LocationArea, err Error){
-	idString := string(id)
+func GetMap(id int) (LocationArea, error){
+	idString := strconv.Itoa(id)
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", idString)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("Error with get request: %w", err)
+		return LocationArea{}, fmt.Errorf("Error with get request: %w", err)
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Unexpected status code: %v", resp.StatusCode)
+		return LocationArea{}, fmt.Errorf("Unexpected status code: %v", resp.StatusCode)
 	}
 
 	var locationMap LocationArea
-	decoder := json.NewDecoder(res.Body)
+	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&locationMap); err != nil{
-		return nil, fmt.Errorf("Error with decoding json from pokeapi: %w", err)
+		return LocationArea{}, fmt.Errorf("Error with decoding json from pokeapi: %w", err)
 	}
 
 	//Alternative to the decoder, we can unmarshall the data 
@@ -39,11 +41,11 @@ func GetMap(id int) (locationMap LocationArea, err Error){
 	/*
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Error with byte reader: %v", err)
+		return LocationArea{}, fmt.Errorf("Error with byte reader: %v", err)
 	}
 	var locationMap LocationArea
 	if err := json.Unmarshal(bodyBytes, &locationMap); err = nil{
-		return nil, fmt.Errorf("Error with unmarshalling json from pokeapi: %w", err)
+		return LocationArea{}, fmt.Errorf("Error with unmarshalling json from pokeapi: %w", err)
 	}
 	*/
 
@@ -51,30 +53,32 @@ func GetMap(id int) (locationMap LocationArea, err Error){
 	return locationMap, nil
 }
 
-func Map(startId int) endId int {
-	for i:=startID; i<startId+20; i++ {
+func Map(st *state.Config) error {
+	startId := st.Id
+	for i:=startId+1; i<=startId+20; i++ {
 		location, err := GetMap(i)
 		if err != nil{
-			endId := i
 			//fmt.Printf("%v", err)
-			return endId
+			st.Id = i-1
+			return nil
 		}
 		fmt.Println(location.Name)
 	}
-	endId = i+19
-	return endId
+	st.Id = startId+20
+	return nil
 }
 
-func MapB(startId int) endId int {
-	for i := startID; i>startId-20; i-- {
+func MapB(st *state.Config) error {
+	startId := st.Id
+	for i := startId-1; i>=startId-20; i-- {
 		location, err := GetMap(i)
 		if err != nil{
-			endId :=i
 			//fmt.Printf("%v", err)
-			return endId
+			st.Id = i+1
+			return nil
 		}
 		fmt.Println(location.Name)
 	}
-	endId = i-19
-	return endId
+	st.Id = startId-20
+	return nil
 }
