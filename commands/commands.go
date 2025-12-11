@@ -10,16 +10,16 @@ import (
 type CliCommand struct {
 	Name        string
 	Description string
-	Callback    func(*state.Config) error
+	Callback    func(*state.Config, ...string) error
 }
 
-func CommandExit(cfg *state.Config) error {
+func CommandExit(cfg *state.Config, args ...string) error {
 	fmt.Print("Closing the Pokedex... Goodbye!\n")
 	os.Exit(0)
 	return nil
 }
 
-func CommandHelp(cfg *state.Config) error {
+func CommandHelp(cfg *state.Config, args ...string) error {
 	fmt.Println("SUPPORTED COMMANDS:")
 	for str, cmd := range SupportedCommands {
 		fmt.Printf("Command: %s\n", str)

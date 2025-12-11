@@ -11,8 +11,19 @@ import (
 )
 
 type LocationArea struct {
-	Id      int
-	Name    string
+	Id          int
+	Name        string
+	Encounters  []Encounter
+}
+
+type Encounter struct {
+	pokemon     Pokemon
+	//Also version details but we are not implementing it now
+}
+
+type Pokemon struct {
+	name        string
+	url         string
 }
 
 func GetMap(id int, cache *internal.Cache, interval time.Duration) (LocationArea, error){
@@ -54,7 +65,7 @@ func GetMap(id int, cache *internal.Cache, interval time.Duration) (LocationArea
 	return locationMap, nil
 }
 
-func Map(st *state.Config) error {
+func Map(st *state.Config, args ...string) error {
 	startId := st.Id
 	if st.LocationCache == nil{
 		c  := internal.NewCache(st.Interval)
@@ -75,7 +86,7 @@ func Map(st *state.Config) error {
 	return nil
 }
 
-func MapB(st *state.Config) error {
+func MapB(st *state.Config, args ...string) error {
 	startId := st.Id
 	if st.LocationCache == nil{
 		c  := internal.NewCache(st.Interval)
