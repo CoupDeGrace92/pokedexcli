@@ -38,7 +38,7 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 func (c *Cache) reapLoop(interval time.Duration){
 	//Uses the interval (time.Duration value passed to New Cache function) has passed, remove any entries in cache older than the interval
 	//We can use time.Ticker to make this happen
-	ticker := time.NewTicker(interval*time.Second)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	//Once we have a value
