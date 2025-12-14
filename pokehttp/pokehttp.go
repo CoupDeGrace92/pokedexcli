@@ -11,9 +11,9 @@ import (
 )
 
 type LocationArea struct {
-	Id          int
-	Name        string
-	Encounters  []Encounter
+	Id                  int
+	Name                string
+	pokemon_encounters  []Encounter
 }
 
 type Encounter struct {
