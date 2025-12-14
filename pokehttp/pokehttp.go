@@ -8,27 +8,56 @@ import (
 	"github.com/CoupDeGrace92/pokedexcli/state"
 	"github.com/CoupDeGrace92/pokedexcli/internal"
 	"time"
+	"io"
 )
 
 type LocationArea struct {
 	Id                  int
 	Name                string
-	pokemon_encounters  []Encounter
+	PokemonEncounters  []Encounter `json:"pokemon_encounters"`
 }
 
 type Encounter struct {
-	pokemon     Pokemon
+	Pokemon     Pokemon
 	//Also version details but we are not implementing it now
 }
 
 type Pokemon struct {
-	name        string
-	url         string
+	Name        string
+	Url         string
 }
 
-func GetMap(id int, cache *internal.Cache, interval time.Duration) (LocationArea, error){
-	idString := strconv.Itoa(id)
-	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", idString)
+func GetMapTest(id string) (LocationArea, error){
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", id)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return LocationArea{}, fmt.Errorf("Error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return LocationArea{}, fmt.Errorf("Error: %v", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return LocationArea{}, fmt.Errorf("Error: %v", err)
+	}
+
+	fmt.Println(string(body))
+	
+	var locationMap LocationArea
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&locationMap); err != nil{
+		return LocationArea{}, fmt.Errorf("Error: %v", err)
+	}
+
+	return locationMap, nil
+}
+
+func GetMap(id string, cache *internal.Cache, interval time.Duration) (LocationArea, error){
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", id)
 
 	if value, ok := cache.Get(url); ok{
 		var locationArea LocationArea
@@ -74,7 +103,8 @@ func Map(st *state.Config, args ...string) error {
 	cache := st.LocationCache
 	interval := st.Interval
 	for i:=startId+1; i<=startId+20; i++ {
-		location, err := GetMap(i, cache, interval)
+		locId := strconv.Itoa(i)
+		location, err := GetMap(locId, cache, interval)
 		if err != nil{
 			//fmt.Printf("%v", err)
 			st.Id = i-1
@@ -95,7 +125,8 @@ func MapB(st *state.Config, args ...string) error {
 	cache := st.LocationCache
 	interval := st.Interval
 	for i := startId-1; i>=startId-20; i-- {
-		location, err := GetMap(i, cache, interval)
+		locId := strconv.Itoa(i)
+		location, err := GetMap(locId, cache, interval)
 		if err != nil{
 			//fmt.Printf("%v", err)
 			st.Id = i+1
@@ -104,5 +135,30 @@ func MapB(st *state.Config, args ...string) error {
 		fmt.Println(location.Name)
 	}
 	st.Id = startId-20
+	return nil
+}
+
+func Explore(st *state.Config, args ...string) error {
+	if st.LocationCache == nil{
+		c := internal.NewCache(st.Interval)
+		st.LocationCache = &c
+	}
+	cache := st.LocationCache
+	interval := st.Interval
+	for _, loc := range args {
+		location, err := GetMap(loc, cache, interval)
+		if err != nil{
+			fmt.Printf("Unable to find location %s: %v\n", loc, err)
+			continue
+		}
+		fmt.Printf("Location: %s\n", loc)
+		if len(location.PokemonEncounters) < 1{
+			fmt.Printf("No pokemon found here\n")
+			continue
+		}
+		for _, encounter := range location.PokemonEncounters {
+			fmt.Printf("	%s\n", encounter.Pokemon.Name)
+		}
+	}
 	return nil
 }

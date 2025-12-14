@@ -10,6 +10,7 @@ import (
 
 
 func main() {
+
 	cfg := &state.Config{
 		Id:            0,
 		LocationCache: nil,
