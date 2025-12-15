@@ -15,6 +15,8 @@ func main() {
 		Id:            0,
 		LocationCache: nil,
 		Interval:      45 * time.Second,
+		PokeDex:       make(map[string]state.Pokemon),
+		PokemonCache:  nil,
 	}
 
 	fmt.Print("Welcome to the Pokedex!\n")

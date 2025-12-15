@@ -38,6 +38,44 @@ func CommandHelp(cfg *state.Config, args ...string) error {
 	return nil
 }
 
+func CommandInspect(cfg *state.Config, args ...string) error{
+	if len(args) == 0 {
+		fmt.Printf("No pokemon were entered\n")
+		return nil
+	}
+	for _, poke := range args{
+		pokeObject, ok := cfg.PokeDex[poke]
+		if !ok {
+			fmt.Printf("You have not caught that pokemon\n")
+			continue
+		}
+		fmt.Printf("\nHeight: %v\n", pokeObject.Height)
+		fmt.Printf("Weight: %v\n", pokeObject.Weight)
+		fmt.Printf("Stats:\n")
+		for _, stat := range pokeObject.Stats {
+			fmt.Printf("	-%s: %v\n", stat.Stat.Name, stat.BaseStat)
+		}
+		fmt.Printf("Types:\n")
+		for _, typ := range pokeObject.Types {
+			fmt.Printf("	-%s\n", typ.Type.Name)
+		}
+	}
+	fmt.Printf("\n")
+	return nil
+}
+
+func CommandPokedex(cfg *state.Config, args ...string) error{
+	fmt.Printf("Your Pokedex:\n")
+	if len(cfg.PokeDex)==0{
+		fmt.Printf("No Pokemon caught, get on catching ya ignoramus\n")
+	}
+	for name, _ := range cfg.PokeDex {
+		fmt.Printf("	-%s\n",name)
+	}
+	fmt.Println()
+	return nil
+}
+
 var SupportedCommands = map[string]CliCommand{
 	"exit": {
 		Name:        "exit",
@@ -55,9 +93,24 @@ var SupportedCommands = map[string]CliCommand{
 		Callback:    pokehttp.MapB,
 	},
 	"explore": {
-		Name: "explore",
+		Name:        "explore",
 		Description: "Display the pokemon that can be encountered at the requested location(s)",
-		Callback: pokehttp.Explore,
+		Callback:    pokehttp.Explore,
+	},
+	"catch": {
+		Name:        "catch",
+		Description: "Attempts to catch the specified pokemon, if successful, add it to the PokeDex",
+		Callback:    pokehttp.Catch,
+	},
+	"inspect": {
+		Name:         "inspect",
+		Description:  "Displays a pokemons information if previously caught",
+		Callback:     CommandInspect,
+	},
+	"pokedex": {
+		Name:         "pokedex",
+		Description:  "Displays the name of each pokemon caught",
+		Callback:     CommandPokedex,
 	},
 }
 

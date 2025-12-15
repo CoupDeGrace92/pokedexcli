@@ -9,6 +9,7 @@ import (
 	"github.com/CoupDeGrace92/pokedexcli/internal"
 	"time"
 	"io"
+	"math/rand"
 )
 
 type LocationArea struct {
@@ -18,14 +19,10 @@ type LocationArea struct {
 }
 
 type Encounter struct {
-	Pokemon     Pokemon
+	Pokemon     state.Pokemon
 	//Also version details but we are not implementing it now
 }
 
-type Pokemon struct {
-	Name        string
-	Url         string
-}
 
 func GetMapTest(id string) (LocationArea, error){
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", id)
@@ -161,4 +158,76 @@ func Explore(st *state.Config, args ...string) error {
 		}
 	}
 	return nil
+}
+
+func Catch(st *state.Config, args ...string) error {
+	if len(args) == 0 {
+		err := fmt.Errorf("No pokemon specified to catch\n")
+		fmt.Println(err)
+		return err
+	}
+
+	if st.PokemonCache == nil{
+		c := internal.NewCache(st.Interval)
+		st.PokemonCache = &c
+	}
+
+	for _, poke := range args {
+		pokemon, err := GetPokemon(poke, st.PokemonCache, st.Interval)
+		if err != nil{
+			fmt.Printf("Pokemon %s not found: %v\n", poke, err)
+			continue
+		}
+
+		fmt.Printf("Throwing a Pokeball at %s...\n", poke)
+
+		thresh := float64(pokemon.BaseExperience)/6.5
+		rand := float64(rand.Intn(100)+1)
+		if rand < thresh {
+			fmt.Printf("%s escaped!\n", pokemon.Name)
+			continue
+		}
+
+		fmt.Printf("%s was caught!\n", pokemon.Name)
+		st.PokeDex[pokemon.Name] = pokemon
+	}
+	return nil
+}
+
+func GetPokemon(id string, cache *internal.Cache, interval time.Duration) (state.Pokemon, error){
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%s/", id)
+
+	if value, ok := cache.Get(url); ok{
+		var poke state.Pokemon
+		err := json.Unmarshal(value, &poke)
+		if err != nil {
+			return state.Pokemon{}, fmt.Errorf("Error unmarshalling data from cache: %v", err)
+		}
+		return poke, nil
+	}
+
+	resp, err := http.Get(url)
+	if err != nil{
+		return state.Pokemon{}, fmt.Errorf("Error with get request: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return state.Pokemon{}, fmt.Errorf("Error with http status: %v", err)
+	}
+
+	var poke state.Pokemon
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&poke); err != nil{
+		return state.Pokemon{}, fmt.Errorf("Error with decoding response: %v", err)
+	}
+
+	byteSlice, err := json.Marshal(poke)
+	if err != nil{
+		return state.Pokemon{}, fmt.Errorf("Error with marshalling json from poke: %v", err)
+	}
+	cache.Add(url, byteSlice)
+
+	return poke, nil
+
 }
